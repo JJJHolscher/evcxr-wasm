@@ -662,6 +662,16 @@ Panic detected. Here's some useful information if you're filing a bug report.
                 |ctx, state, args| {
                     ctx.hover(state, args)
                 }
+            ),
+            AvailableCommand::new(
+                ":wasm",
+                "isolate this code block and compile it to wasm",
+                |ctx, state, _args| {
+                    *state = ctx.eval_context.cleared_state();
+                    state.wasm_mode = true;
+                    // state.config.target = "wasm-unknown-unknown".to_owned();
+                    Ok(EvalOutputs::new())
+                }
             )
         ]
     }

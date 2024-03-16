@@ -625,6 +625,7 @@ dependencies = [
  "ra_ap_vfs",
  "ra_ap_vfs-notify",
  "regex",
+ "serde_json",
  "sig",
  "tempfile",
  "toml",

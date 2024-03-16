@@ -13,11 +13,13 @@ use crate::errors::CompilationError;
 use crate::errors::Error;
 use crate::eval_context::Config;
 use crate::eval_context::ContextState;
+use crate::eval_context::EvalOutputs;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use once_cell::sync::Lazy;
 use regex::Regex;
+use serde_json::json;
 use std::ffi::OsString;
 use std::fs;
 use std::io::Write;
@@ -214,6 +216,87 @@ impl Module {
         Ok(SoFile {
             path: copied_so_file,
         })
+    }
+
+    pub(crate) fn compile_wasm(
+        &mut self,
+        code_block: &CodeBlock,
+        config: &Config,
+    ) -> Result<EvalOutputs, Error> {
+        let mut command = Command::new("wasm-pack");
+        command
+            .args(["build", "--no-typescript", "--target", "no-modules"])
+            .current_dir(config.crate_dir())
+            .env("CARGO_TARGET_DIR", "target")
+            .env("RUSTC", &config.rustc_path)
+            .envs(&config.build_envs)
+            .env(crate::module::CORE_EXTERN_ENV, &config.core_extern);
+
+        if config.cache_bytes() > 0 {
+            command.env(crate::module::CACHE_ENABLED_ENV, "1");
+            command.env(
+                crate::module::cache::TARGET_DIR_ENV,
+                config.common_target_dir(),
+            );
+        }
+
+        self.write_code(code_block, config)?;
+        let cargo_output = run_cargo(command, code_block)?;
+
+        self.build_num += 1;
+        let copied_so_file = config
+            .deps_dir()
+            .join(shared_object_name_from_crate_name(&format!(
+                "code_{}",
+                self.build_num
+            )));
+        if config.cache_bytes() > 0 {
+            crate::module::cache::cleanup(config.cache_bytes())?;
+        }
+        self.read_wasm_artifacts(config.crate_dir().join("pkg"))
+    }
+
+    fn read_wasm_artifacts(&self, pkg_dir: PathBuf) -> Result<EvalOutputs, Error> {
+        let mut out = EvalOutputs::new();
+        // out.content_by_mime_type.insert(
+        // "text/html".to_owned(),
+        // pkg_dir.into_os_string().into_string().unwrap(),
+        // );
+        // return Ok(out);
+        let wasm = std::fs::read(pkg_dir.join("ctx_bg.wasm"))?;
+        let mut js_glue = Vec::new();
+
+        for line in std::fs::read_to_string(pkg_dir.join("ctx.js"))
+            .unwrap()
+            .lines()
+            .skip(1)
+        {
+            js_glue.push(line.to_string());
+        }
+
+        out.content_by_mime_type.insert(
+            "text/html".to_owned(),
+            format!(
+                "<script>
+                if (typeof evcxr_wasm === 'undefined') {{
+                    var evcxr_wasm = {{}};
+                }}
+                wasm_bindgen = null;
+
+                {}
+
+                raw_wasm = new Uint8Array({});
+                wasm_bindgen.initSync(raw_wasm);
+                Object.assign(evcxr_wasm, wasm_bindgen);
+                if 'main' in wasm_bindgen {
+                    wasm_bindgen.main()
+                }
+                </script>",
+                js_glue.join("\n"),
+                json!(wasm)
+            ),
+        );
+        Ok(out)
     }
 
     fn write_code(&self, code_block: &CodeBlock, config: &Config) -> Result<(), Error> {

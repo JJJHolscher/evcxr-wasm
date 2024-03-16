@@ -781,6 +781,7 @@ impl EvalContext {
     }
 
     fn commit_state(&mut self, mut state: ContextState) {
+        if state.wasm_mode { return }
         for variable_state in state.variable_states.values_mut() {
             // This span only makes sense when the variable is first defined.
             variable_state.definition_span = None;
@@ -885,6 +886,11 @@ impl EvalContext {
         callbacks: &mut EvalCallbacks,
     ) -> Result<ExecutionArtifacts, Error> {
         let code = state.code_to_compile(user_code, compilation_mode);
+        if state.wasm_mode {
+            return Ok(ExecutionArtifacts {
+                output: self.module.compile_wasm(&code, &state.config)?,
+            });
+        }
         let so_file = self.module.compile(&code, &state.config)?;
 
         if compilation_mode == CompilationMode::NoCatchExpectError {
@@ -1296,6 +1302,7 @@ pub struct ContextState {
     stored_variable_states: HashMap<String, VariableState>,
     attributes: HashMap<String, CodeBlock>,
     async_mode: bool,
+    pub wasm_mode: bool,
     allow_question_mark: bool,
     build_num: i32,
     pub(crate) config: Config,
@@ -1312,6 +1319,7 @@ impl ContextState {
             stored_variable_states: HashMap::new(),
             attributes: HashMap::new(),
             async_mode: false,
+            wasm_mode: false,
             allow_question_mark: false,
             build_num: 0,
             config,
