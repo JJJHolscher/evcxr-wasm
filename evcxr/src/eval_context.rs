@@ -63,7 +63,7 @@ pub struct EvalContext {
 
 #[derive(Clone, Debug)]
 pub(crate) struct Config {
-    tmpdir: PathBuf,
+    pub(crate) tmpdir: PathBuf,
     pub(crate) debug_mode: bool,
     // Whether we should preserve variables that are Copy when a panic occurs.
     // Sounds good, but unfortunately doing so currently requires an extra build
@@ -781,7 +781,9 @@ impl EvalContext {
     }
 
     fn commit_state(&mut self, mut state: ContextState) {
-        if state.wasm_mode { return }
+        if state.wasm_mode {
+            return;
+        }
         for variable_state in state.variable_states.values_mut() {
             // This span only makes sense when the variable is first defined.
             variable_state.definition_span = None;

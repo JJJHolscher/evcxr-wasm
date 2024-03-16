@@ -669,7 +669,12 @@ Panic detected. Here's some useful information if you're filing a bug report.
                 |ctx, state, _args| {
                     *state = ctx.eval_context.cleared_state();
                     state.wasm_mode = true;
-                    // state.config.target = "wasm-unknown-unknown".to_owned();
+                    state.config.target = "wasm-unknown-unknown".to_owned();
+
+                    let tmpdir = std::env::current_dir()?.join("evcxr_build");
+                    std::fs::create_dir_all(&tmpdir)?;
+                    state.config.tmpdir = tmpdir;
+                    
                     Ok(EvalOutputs::new())
                 }
             )

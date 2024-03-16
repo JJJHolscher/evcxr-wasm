@@ -225,7 +225,7 @@ impl Module {
     ) -> Result<EvalOutputs, Error> {
         let mut command = Command::new("wasm-pack");
         command
-            .args(["build", "--no-typescript", "--target", "no-modules"])
+            .args(["build", "--no-typescript", "--target", "web"])
             .current_dir(config.crate_dir())
             .env("CARGO_TARGET_DIR", "target")
             .env("RUSTC", &config.rustc_path)
@@ -253,48 +253,25 @@ impl Module {
         if config.cache_bytes() > 0 {
             crate::module::cache::cleanup(config.cache_bytes())?;
         }
-        self.read_wasm_artifacts(config.crate_dir().join("pkg"))
+        self.read_wasm_artifacts()
     }
 
-    fn read_wasm_artifacts(&self, pkg_dir: PathBuf) -> Result<EvalOutputs, Error> {
+    fn read_wasm_artifacts(&self) -> Result<EvalOutputs, Error> {
         let mut out = EvalOutputs::new();
-        // out.content_by_mime_type.insert(
-        // "text/html".to_owned(),
-        // pkg_dir.into_os_string().into_string().unwrap(),
-        // );
-        // return Ok(out);
-        let wasm = std::fs::read(pkg_dir.join("ctx_bg.wasm"))?;
-        let mut js_glue = Vec::new();
-
-        for line in std::fs::read_to_string(pkg_dir.join("ctx.js"))
-            .unwrap()
-            .lines()
-            .skip(1)
-        {
-            js_glue.push(line.to_string());
-        }
-
+        // TODO; check whether dioxus_web::launch works.
         out.content_by_mime_type.insert(
             "text/html".to_owned(),
-            format!(
-                "<script>
-                if (typeof evcxr_wasm === 'undefined') {{
-                    var evcxr_wasm = {{}};
-                }}
-                wasm_bindgen = null;
+            "<script type='module'>
+            if (typeof window.evcxr_wasm === 'undefined') {
+                window.evcxr_wasm = {};
+            }
 
-                {}
-
-                raw_wasm = new Uint8Array({});
-                wasm_bindgen.initSync(raw_wasm);
-                Object.assign(evcxr_wasm, wasm_bindgen);
-                if 'main' in wasm_bindgen {
-                    wasm_bindgen.main()
-                }
-                </script>",
-                js_glue.join("\n"),
-                json!(wasm)
-            ),
+            import(`/files/evcxr_build/pkg/ctx.js?version=${Date.now()}`).then((wasm_bindgen) => {
+                console.log(wasm_bindgen)
+                Object.assign(window.evcxr_wasm, wasm_bindgen);
+            })
+            </script>"
+                .to_owned(),
         );
         Ok(out)
     }
