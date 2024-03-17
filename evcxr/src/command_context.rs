@@ -670,10 +670,13 @@ Panic detected. Here's some useful information if you're filing a bug report.
                     *state = ctx.eval_context.cleared_state();
                     state.wasm_mode = true;
                     state.config.target = "wasm-unknown-unknown".to_owned();
-
-                    let tmpdir = std::env::current_dir()?.join("evcxr_build");
-                    std::fs::create_dir_all(&tmpdir)?;
-                    state.config.tmpdir = tmpdir;
+                    // compile the wasm to a subdirectory of the working directory
+                    // let version = ctx.eval_context.get_build_num();
+                    // let build_dir = std::env::current_dir()?
+                        // .join("evcxr_build")
+                        // .join(version.to_string());
+                    // std::fs::create_dir_all(&build_dir)?;
+                    // state.config.tmpdir = build_dir;
                     
                     Ok(EvalOutputs::new())
                 }

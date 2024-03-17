@@ -121,7 +121,7 @@ fn rename_or_copy_so_file(src: &Path, dest: &Path) -> Result<(), Error> {
 
 #[derive(Default)]
 pub(crate) struct Module {
-    build_num: i32,
+    pub(crate) build_num: i32,
     last_allow_static: Option<bool>,
 }
 
@@ -223,9 +223,19 @@ impl Module {
         code_block: &CodeBlock,
         config: &Config,
     ) -> Result<EvalOutputs, Error> {
+        let pkg_dir = format!("evcxr_pkg/{}", self.build_num);
+        let abs_pkg_dir = std::env::current_dir()?.join(&pkg_dir);
         let mut command = Command::new("wasm-pack");
         command
-            .args(["build", "--no-typescript", "--target", "web"])
+            .args([
+                "build",
+                "--no-typescript",
+                "--target",
+                "web",
+                "-d",
+                &abs_pkg_dir.into_os_string().into_string().unwrap(),
+                "--dev"
+            ])
             .current_dir(config.crate_dir())
             .env("CARGO_TARGET_DIR", "target")
             .env("RUSTC", &config.rustc_path)
@@ -241,10 +251,10 @@ impl Module {
         }
 
         self.write_code(code_block, config)?;
-        let cargo_output = run_cargo(command, code_block)?;
+        let _ = run_cargo(command, code_block)?;
 
         self.build_num += 1;
-        let copied_so_file = config
+        let _ = config
             .deps_dir()
             .join(shared_object_name_from_crate_name(&format!(
                 "code_{}",
@@ -253,26 +263,34 @@ impl Module {
         if config.cache_bytes() > 0 {
             crate::module::cache::cleanup(config.cache_bytes())?;
         }
-        self.read_wasm_artifacts()
+        Self::javascript_that_loads_wasm(&pkg_dir)
     }
 
-    fn read_wasm_artifacts(&self) -> Result<EvalOutputs, Error> {
-        let mut out = EvalOutputs::new();
-        // TODO; check whether dioxus_web::launch works.
-        out.content_by_mime_type.insert(
-            "text/html".to_owned(),
-            "<script type='module'>
-            if (typeof window.evcxr_wasm === 'undefined') {
-                window.evcxr_wasm = {};
-            }
+    fn javascript_that_loads_wasm(pkg_dir: &str) -> Result<EvalOutputs, Error> {
+        let js: String = format!("
+<script type='module'>
+if (typeof window.evcxr === 'undefined') {{
+    window.evcxr = {{}};
+}}
 
-            import(`/files/evcxr_build/pkg/ctx.js?version=${Date.now()}`).then((wasm_bindgen) => {
-                console.log(wasm_bindgen)
-                Object.assign(window.evcxr_wasm, wasm_bindgen);
-            })
-            </script>"
-                .to_owned(),
-        );
+import init, * as wasm_bindgen from '/files/{pkg_dir}/ctx.js'
+
+for (const [fn_name, fn] of Object.entries(wasm_bindgen)) {{
+    if (typeof fn === 'function') {{
+        async function loader_fn(...args) {{
+            await init();
+            return fn(...args);
+        }};
+        Object.defineProperty(window.evcxr, fn_name, {{ 
+            writable: true,
+            value: loader_fn 
+        }});
+    }}
+}}
+</script>
+");
+        let mut out = EvalOutputs::new();
+        out.content_by_mime_type.insert("text/html".to_owned(), js);
         Ok(out)
     }
 

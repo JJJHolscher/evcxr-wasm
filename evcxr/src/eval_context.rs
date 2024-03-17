@@ -502,6 +502,10 @@ impl EvalContext {
         (context, outputs)
     }
 
+    pub fn get_build_num(&self) -> i32 {
+        self.module.build_num
+    }
+
     pub fn with_subprocess_command(
         mut subprocess_command: std::process::Command,
     ) -> Result<(EvalContext, EvalContextOutputs), Error> {
@@ -1304,7 +1308,7 @@ pub struct ContextState {
     stored_variable_states: HashMap<String, VariableState>,
     attributes: HashMap<String, CodeBlock>,
     async_mode: bool,
-    pub wasm_mode: bool,
+    pub(crate) wasm_mode: bool,
     allow_question_mark: bool,
     build_num: i32,
     pub(crate) config: Config,
