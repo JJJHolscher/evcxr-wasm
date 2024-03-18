@@ -25,7 +25,6 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
-use serde_json::json;
 
 mod artifacts;
 pub(crate) mod cache;
@@ -223,7 +222,8 @@ impl Module {
         code_block: &CodeBlock,
         config: &Config,
     ) -> Result<EvalOutputs, Error> {
-        let pkg_dir = format!("pkg/{}", self.build_num);
+        let pkg_dir = format!("evcxr_pkg/{}", self.build_num);
+        let abs_pkg_dir = std::env::current_dir()?.join(&pkg_dir);
         let mut command = Command::new("wasm-pack");
         command
             .args([
@@ -232,7 +232,7 @@ impl Module {
                 "--target",
                 "web",
                 "-d",
-                &pkg_dir,
+                &abs_pkg_dir.into_os_string().into_string().unwrap(),
                 "--dev"
             ])
             .current_dir(config.crate_dir())
@@ -262,43 +262,44 @@ impl Module {
         if config.cache_bytes() > 0 {
             crate::module::cache::cleanup(config.cache_bytes())?;
         }
-        Self::javascript_that_loads_wasm(config.crate_dir().join(pkg_dir))
+        Self::javascript_that_loads_wasm(&pkg_dir)
     }
 
-    fn javascript_that_loads_wasm(pkg_dir: PathBuf) -> Result<EvalOutputs, Error> {
+    fn javascript_that_loads_wasm(pkg_dir: &str) -> Result<EvalOutputs, Error> {
+        let js: String = format!("
+<script>
+if (typeof window.evcxr === 'undefined') {{
+    window.evcxr = {{}};
+}}
+
+window.__evcxr_load = function(init, wasm_bindgen) {{
+    for (const [fn_name, fn] of Object.entries(wasm_bindgen)) {{
+        if (typeof fn === 'function') {{
+            async function loader_fn(...args) {{
+                await init();
+                return fn(...args);
+            }};
+            Object.defineProperty(window.evcxr, fn_name, {{ 
+                writable: true,
+                value: loader_fn 
+            }});
+        }}
+    }}
+}}
+</script>
+<script type='module'>
+// this errors in jupyter lab or jupyter notebook
+import init, * as wasm_bindgen from './{pkg_dir}/ctx.js'
+window.__evcxr_load(init, wasm_bindgen);
+</script>
+<script type='module'>
+// this errors when not in jupyter lab or jupyter notebook
+import init, * as wasm_bindgen from '/files/{pkg_dir}/ctx.js'
+window.__evcxr_load(init, wasm_bindgen);
+</script>
+");
         let mut out = EvalOutputs::new();
-        let wasm = std::fs::read(pkg_dir.join("ctx_bg.wasm"))?;
-        let js_glue = std::fs::read_to_string(pkg_dir.join("ctx.js"))?;
-
-        out.content_by_mime_type.insert(
-            "text/html".to_owned(),
-            format!(
-                "<script type='module'>
-                if (typeof evcxr === 'undefined') {{
-                    window.evcxr = {{}};
-                }}
-
-                {}
-
-                initSync(new Uint8Array({}));
-
-                for (const fn_name of Object.keys(wasm)) {{
-                    try {{
-                        console.log(fn_name);
-                        Object.defineProperty(window.evcxr, fn_name, {{ 
-                            writable: true,
-                            value: eval(fn_name) 
-                        }});
-                    }} catch (e) {{
-                        console.log(e)
-                        continue;
-                    }}
-                }}
-                </script>",
-                js_glue,
-                json!(wasm)
-            ),
-        );
+        out.content_by_mime_type.insert("text/html".to_owned(), js);
         Ok(out)
     }
 
