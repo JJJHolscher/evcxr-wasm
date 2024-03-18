@@ -19,7 +19,6 @@ use anyhow::Context;
 use anyhow::Result;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use serde_json::json;
 use std::ffi::OsString;
 use std::fs;
 use std::io::Write;
@@ -121,7 +120,7 @@ fn rename_or_copy_so_file(src: &Path, dest: &Path) -> Result<(), Error> {
 
 #[derive(Default)]
 pub(crate) struct Module {
-    pub(crate) build_num: i32,
+    build_num: i32,
     last_allow_static: Option<bool>,
 }
 

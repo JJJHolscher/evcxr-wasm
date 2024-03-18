@@ -502,10 +502,6 @@ impl EvalContext {
         (context, outputs)
     }
 
-    pub fn get_build_num(&self) -> i32 {
-        self.module.build_num
-    }
-
     pub fn with_subprocess_command(
         mut subprocess_command: std::process::Command,
     ) -> Result<(EvalContext, EvalContextOutputs), Error> {
