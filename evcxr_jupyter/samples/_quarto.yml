@@ -1,0 +1,5 @@
+project:
+  type: website
+  output-dir: webpage
+  resources: evcxr_pkg
+  post-render: "./quarto.sh post-render"

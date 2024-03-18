@@ -1,0 +1,79 @@
+[
+  {
+    "objectID": "evcxr_jupyter_tour.html",
+    "href": "evcxr_jupyter_tour.html",
+    "title": "Google Colab Rust Setup",
+    "section": "",
+    "text": "The following cell is used to set up and spin up a Jupyter Notebook environment with a Rust kernel using Nix and IPC Proxy.\n!wget -qO- https://gist.github.com/wiseaidev/2af6bef753d48565d11bcd478728c979/archive/3f6df40db09f3517ade41997b541b81f0976c12e.tar.gz | tar xvz --strip-components=1\n!bash setup_evcxr_kernel.sh"
+  },
+  {
+    "objectID": "evcxr_jupyter_tour.html#printing-to-outputs-and-evaluating-expressions",
+    "href": "evcxr_jupyter_tour.html#printing-to-outputs-and-evaluating-expressions",
+    "title": "Google Colab Rust Setup",
+    "section": "Printing to outputs and evaluating expressions",
+    "text": "Printing to outputs and evaluating expressions\nLets print something to stdout and stderr then return a final expression to see how that’s presented. Note that stdout and stderr are separate streams, so may not appear in the same order is their respective print statements.\n\nprintln!(\"Hello world\");\neprintln!(\"Hello error\");\nformat!(\"Hello {}\", \"world\")\n\nHello world\n\n\nHello error\n\n\n\"Hello world\""
+  },
+  {
+    "objectID": "evcxr_jupyter_tour.html#assigning-and-making-use-of-variables",
+    "href": "evcxr_jupyter_tour.html#assigning-and-making-use-of-variables",
+    "title": "Google Colab Rust Setup",
+    "section": "Assigning and making use of variables",
+    "text": "Assigning and making use of variables\nWe define a variable message, then in the subsequent cell, modify the string and finally print it out. We could also do all this in the one cell if we wanted.\n\nlet mut message = \"Hello \".to_owned();\n\n\nmessage.push_str(\"world!\");\n\n\nmessage\n\n\"Hello world!\""
+  },
+  {
+    "objectID": "evcxr_jupyter_tour.html#defining-and-redefining-functions",
+    "href": "evcxr_jupyter_tour.html#defining-and-redefining-functions",
+    "title": "Google Colab Rust Setup",
+    "section": "Defining and redefining functions",
+    "text": "Defining and redefining functions\nNext we’ll define a function\n\npub fn fib(x: i32) -&gt; i32 {\n    if x &lt;= 2 {0} else {fib(x - 2) + fib(x - 1)}\n}\n\n\n(1..13).map(fib).collect::&lt;Vec&lt;i32&gt;&gt;()\n\n[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]\n\n\nHmm, that doesn’t look right. Lets redefine the function. In practice, we’d go back and edit the function above and reevalute it, but here, lets redefine it in a separate cell.\n\npub fn fib(x: i32) -&gt; i32 {\n    if x &lt;= 2 {1} else {fib(x - 2) + fib(x - 1)}\n}\n\n\nlet values = (1..13).map(fib).collect::&lt;Vec&lt;i32&gt;&gt;();\nvalues\n\n[1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144]"
+  },
+  {
+    "objectID": "evcxr_jupyter_tour.html#spawning-a-separate-thread-and-communicating-with-it",
+    "href": "evcxr_jupyter_tour.html#spawning-a-separate-thread-and-communicating-with-it",
+    "title": "Google Colab Rust Setup",
+    "section": "Spawning a separate thread and communicating with it",
+    "text": "Spawning a separate thread and communicating with it\nWe can spawn a thread to do stuff in the background, then continue executing code in other cells.\n\nuse std::sync::{Mutex, Arc};\nlet counter = Arc::new(Mutex::new(0i32));\nstd::thread::spawn({\n    let counter = Arc::clone(&counter);\n    move || {\n        for i in 1..300 {\n            *counter.lock().unwrap() += 1;\n            std::thread::sleep(std::time::Duration::from_millis(100));\n        }\n}});\n\n\n*counter.lock()?\n\n13\n\n\n\n*counter.lock()?\n\n17"
+  },
+  {
+    "objectID": "evcxr_jupyter_tour.html#loading-external-crates",
+    "href": "evcxr_jupyter_tour.html#loading-external-crates",
+    "title": "Google Colab Rust Setup",
+    "section": "Loading external crates",
+    "text": "Loading external crates\nWe can load external crates. This one takes a while to compile, but once it’s compiled, subsequent cells shouldn’t need to recompile it, so it should be much quicker.\n\n:dep base64 = \"0.10.1\"\nbase64::encode(&vec![1, 2, 3, 4])\n\n\"AQIDBA==\""
+  },
+  {
+    "objectID": "evcxr_jupyter_tour.html#customizing-how-types-are-displayed",
+    "href": "evcxr_jupyter_tour.html#customizing-how-types-are-displayed",
+    "title": "Google Colab Rust Setup",
+    "section": "Customizing how types are displayed",
+    "text": "Customizing how types are displayed\nWe can also customize how our types are displayed, including presenting them as HTML. Here’s an example where we define a custom display function for a type Matrix.\n\nuse std::fmt::Debug;\npub struct Matrix&lt;T&gt; {pub values: Vec&lt;T&gt;, pub row_size: usize}\nimpl&lt;T: Debug&gt; Matrix&lt;T&gt; {\n    pub fn evcxr_display(&self) {\n        let mut html = String::new();\n        html.push_str(\"&lt;table&gt;\");\n        for r in 0..(self.values.len() / self.row_size) {\n            html.push_str(\"&lt;tr&gt;\");\n            for c in 0..self.row_size {\n                html.push_str(\"&lt;td&gt;\");\n                html.push_str(&format!(\"{:?}\", self.values[r * self.row_size + c]));\n                html.push_str(\"&lt;/td&gt;\");\n            }\n            html.push_str(\"&lt;/tr&gt;\");            \n        }\n        html.push_str(\"&lt;/table&gt;\");\n        println!(\"EVCXR_BEGIN_CONTENT text/html\\n{}\\nEVCXR_END_CONTENT\", html);\n    }\n}\n\n\nlet m = Matrix {values: vec![1,2,3,4,5,6,7,8,9], row_size: 3};\nm\n\n\n\n\n\n1\n2\n3\n\n\n4\n5\n6\n\n\n7\n8\n9\n\n\n\n\n\n\nWe can also return images using add-on crates like evcxr_image, which adds support for displaying RGB and grayscale images in Evcxr. Note, the version of the image crate used must match the version used by evcxr_image, otherwise the types will effectively be different and the image won’t get displayed.\n\n:dep image = \"0.23\"\n:dep evcxr_image = \"1.1\"\nuse evcxr_image::ImageDisplay;\n\nimage::ImageBuffer::from_fn(256, 256, |x, y| {\n    if (x as i32 - y as i32).abs() &lt; 3 {\n        image::Rgb([0, 0, 255])\n    } else {\n        image::Rgb([0, 0, 0])\n    }\n})\n\nThe type of the variable m was redefined, so was lost."
+  },
+  {
+    "objectID": "evcxr_jupyter_tour.html#display-using-wasm",
+    "href": "evcxr_jupyter_tour.html#display-using-wasm",
+    "title": "Google Colab Rust Setup",
+    "section": "Display using WASM",
+    "text": "Display using WASM\nIf you want more control over your visualisations, you can create cells that compile to wasm. Here we use Dioxus to create an interactive high five counter.\n\n:wasm\n:dep wasm-bindgen = \"*\"\n:dep dioxus = { git = \"https://github.com/DioxusLabs/dioxus\", rev = \"cba3abccf4ae8237c0cdd4b5740f0096cbb12531\" }\n:dep dioxus-web = { git = \"https://github.com/DioxusLabs/dioxus\", rev = \"cba3abccf4ae8237c0cdd4b5740f0096cbb12531\" }\n:dep console_error_panic_hook = \"*\"\nuse wasm_bindgen::prelude::*;\nuse dioxus::prelude::*;\nuse console_error_panic_hook;\n\n#[wasm_bindgen]\npub fn high_five_counter(id: String) {\n    console_error_panic_hook::set_once();\n    dioxus_web::launch::launch_cfg(\n        HighFiveCounter,\n        dioxus_web::Config::new().rootname(id),\n    );\n}\n\n#[component]\nfn HighFiveCounter() -&gt; Element {\n    let mut count = use_signal(|| 0);\n\n    rsx!(\n        h1 { \"High-Five counter: {count}\" }\n        button { onclick: move |_| count += 1, \"Up high!\" }\n        button { onclick: move |_| count -= 1, \"Down low!\" }\n    )\n}\n\n\n\n\n\nThis wasm code is now available through the display command.\n\nstruct HighFiveCounter { }\nimpl HighFiveCounter {\n    pub fn evcxr_display(&self) {\n        let html = \"\n            &lt;div id='hfc'&gt;&lt;/div&gt;\n            &lt;script&gt;\n            async function high_five_counter() {\n                await window.evcxr.high_five_counter('hfc');\n            }\n            window.onload = high_five_counter  // Quarto needs you to postpone loading.\n            high_five_counter()  // Jupyter Notebook can call the function immediately.\n            &lt;/script&gt;\n        \";\n        println!(\"EVCXR_BEGIN_CONTENT text/html\\n{}\\nEVCXR_END_CONTENT\", html);\n    }\n}\nlet high_five_counter = HighFiveCounter{ };\nhigh_five_counter"
+  },
+  {
+    "objectID": "evcxr_jupyter_tour.html#display-of-compilation-errors",
+    "href": "evcxr_jupyter_tour.html#display-of-compilation-errors",
+    "title": "Google Colab Rust Setup",
+    "section": "Display of compilation errors",
+    "text": "Display of compilation errors\nHere’s how compilation errors are presented. Here we forgot an & and passed a String instead of an &str.\n\nlet mut s = String::new();\ns.push_str(format!(\"foo {}\", 42));\n\nError: mismatched types"
+  },
+  {
+    "objectID": "evcxr_jupyter_tour.html#async-await",
+    "href": "evcxr_jupyter_tour.html#async-await",
+    "title": "Google Colab Rust Setup",
+    "section": "Async await",
+    "text": "Async await\nAsync functions can be called and the results awaited. Currently this uses Tokio as the executor. The first run of code that uses await will likely be slow while Tokio is compiled. We explicitly add tokio as a dependency so that we can turn on the “full” feature. This is needed for TcpStream. This example also demostrates use of the question mark operator, which upon finding that the result contained an error, prints it to stderr.\n\n:dep tokio = {version = \"0.2\", features = [\"full\"]}\n\n\nlet mut stream : tokio::net::TcpStream = tokio::net::TcpStream::connect(\"127.0.0.1:99999\").await?;\n\ninvalid port value\n\n\nNote, we needed to give an explicit type to the stream variable, because rustc, at least at the time of writing suggests tokio::net::tcp::TcpStream, which is private. We need to explicitly provide the public alias in such cases.\nNow let’s try again with a valid port number. First, make something listen on port 6543. You might be able to use netcat, e.g. nc -t -l 6543.\n\nlet mut stream : tokio::net::TcpStream = tokio::net::TcpStream::connect(\"127.0.0.1:6543\").await?;\n\n\nuse tokio::io::AsyncWriteExt;\nstream.write(b\"Hello, world!\\n\").await?;\n\nAt this point, netcat, or whatever was listening on port 6543 should have received (and printed) “Hello, world!”."
+  },
+  {
+    "objectID": "evcxr_jupyter_tour.html#seeing-what-variables-have-been-defined",
+    "href": "evcxr_jupyter_tour.html#seeing-what-variables-have-been-defined",
+    "title": "Google Colab Rust Setup",
+    "section": "Seeing what variables have been defined",
+    "text": "Seeing what variables have been defined\nWe can print a table of defined variables and their types with the :vars command.\n\n:vars\n\nVariableTypecounterstd::sync::Arc&lt;std::sync::Mutex&lt;i32&gt;&gt;messageStringmuser_code_13::Matrix&lt;i32&gt;valuesstd::vec::Vec&lt;i32&gt;\n\n\nOther built-in commands can be found via :help\n\n:help\n\n:vars             List bound variables and their types\n:opt [level]      Toggle/set optimization level\n:fmt [format]     Set output formatter (default: {:?}). \n:explain          Print explanation of last error\n:clear            Clear all state, keeping compilation cache\n:dep              Add dependency. e.g. :dep regex = \"1.0\"\n:sccache [0|1]    Set whether to use sccache.\n:linker [linker]  Set/print linker. Supported: system, lld\n:version          Print Evcxr version\n:preserve_vars_on_panic [0|1]  Try to keep vars on panic\n\nMostly for development / debugging purposes:\n:last_compile_dir Print the directory in which we last compiled\n:timing           Toggle printing of how long evaluations take\n:last_error_json  Print the last compilation error as JSON (for debugging)\n:time_passes      Toggle printing of rustc pass times (requires nightly)\n:internal_debug   Toggle various internal debugging code"
+  }
+]
