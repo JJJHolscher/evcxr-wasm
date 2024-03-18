@@ -2,6 +2,7 @@
 
 if [ "$1" = "post-render" ]; then
     if [ -d webpage/evcxr_pkg ]; then
+        rm webpage/evcxr_pkg/*/.gitignore
         mkdir -p webpage/files
         mv webpage/evcxr_pkg webpage/files/
     fi
