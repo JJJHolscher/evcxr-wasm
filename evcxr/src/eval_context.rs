@@ -101,6 +101,7 @@ pub(crate) struct Config {
     pub(crate) allow_static_linking: bool,
     pub(crate) build_envs: HashMap<String, String>,
     subprocess_path: PathBuf,
+    pub(crate) wasm_mode: Option<PathBuf>,
 }
 
 #[derive(Default)]
@@ -243,6 +244,7 @@ impl Config {
             subprocess_path,
             codegen_backend: None,
             build_envs: Default::default(),
+            wasm_mode: None
         })
     }
 
@@ -781,7 +783,7 @@ impl EvalContext {
     }
 
     fn commit_state(&mut self, mut state: ContextState) {
-        if state.wasm_mode {
+        if state.config.wasm_mode.is_some() {
             return;
         }
         for variable_state in state.variable_states.values_mut() {
@@ -888,7 +890,7 @@ impl EvalContext {
         callbacks: &mut EvalCallbacks,
     ) -> Result<ExecutionArtifacts, Error> {
         let code = state.code_to_compile(user_code, compilation_mode);
-        if state.wasm_mode {
+        if state.config.wasm_mode.is_some() {
             return Ok(ExecutionArtifacts {
                 output: self.module.compile_wasm(&code, &state.config)?,
             });
@@ -1304,7 +1306,6 @@ pub struct ContextState {
     stored_variable_states: HashMap<String, VariableState>,
     attributes: HashMap<String, CodeBlock>,
     async_mode: bool,
-    pub(crate) wasm_mode: bool,
     allow_question_mark: bool,
     build_num: i32,
     pub(crate) config: Config,
@@ -1321,7 +1322,6 @@ impl ContextState {
             stored_variable_states: HashMap::new(),
             attributes: HashMap::new(),
             async_mode: false,
-            wasm_mode: false,
             allow_question_mark: false,
             build_num: 0,
             config,

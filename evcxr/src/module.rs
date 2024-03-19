@@ -25,6 +25,7 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 mod artifacts;
 pub(crate) mod cache;
@@ -222,8 +223,12 @@ impl Module {
         code_block: &CodeBlock,
         config: &Config,
     ) -> Result<EvalOutputs, Error> {
-        let pkg_dir = format!("evcxr_pkg/{}", self.build_num);
-        let abs_pkg_dir = std::env::current_dir()?.join(&pkg_dir);
+        let abs_pkg_dir = config.wasm_mode.as_ref().unwrap();
+        let pkg_dir = abs_pkg_dir
+            .strip_prefix(std::env::current_dir()?)
+            .unwrap()
+            .to_str()
+            .unwrap();
         let mut command = Command::new("wasm-pack");
         command
             .args([
@@ -232,7 +237,7 @@ impl Module {
                 "--target",
                 "web",
                 "-d",
-                &abs_pkg_dir.into_os_string().into_string().unwrap(),
+                abs_pkg_dir.to_str().unwrap(),
                 "--dev"
             ])
             .current_dir(config.crate_dir())
@@ -262,10 +267,14 @@ impl Module {
         if config.cache_bytes() > 0 {
             crate::module::cache::cleanup(config.cache_bytes())?;
         }
-        Self::javascript_that_loads_wasm(&pkg_dir)
+        Self::javascript_that_loads_wasm(pkg_dir)
     }
 
     fn javascript_that_loads_wasm(pkg_dir: &str) -> Result<EvalOutputs, Error> {
+        let since_the_epoch = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_millis();
         let js: String = format!("
 <script>
 if (typeof window.evcxr === 'undefined') {{
@@ -294,7 +303,7 @@ window.__evcxr_load(init, wasm_bindgen);
 </script>
 <script type='module'>
 // this errors when not in jupyter lab or jupyter notebook
-import init, * as wasm_bindgen from '/files/{pkg_dir}/ctx.js'
+import init, * as wasm_bindgen from '/files/{pkg_dir}/ctx.js?version={since_the_epoch}'
 window.__evcxr_load(init, wasm_bindgen);
 </script>
 ");

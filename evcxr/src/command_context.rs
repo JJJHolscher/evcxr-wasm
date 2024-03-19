@@ -27,6 +27,7 @@ use crate::EvalOutputs;
 use anyhow::anyhow;
 use anyhow::Result;
 use once_cell::sync::Lazy;
+use rand::distributions::{Alphanumeric, DistString};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -665,10 +666,15 @@ Panic detected. Here's some useful information if you're filing a bug report.
             ),
             AvailableCommand::new(
                 ":wasm",
-                "isolate this code block and compile it to wasm",
-                |ctx, state, _args| {
+                "compile this cell to wasm at ./evcxr_pkg/{arg}",
+                |ctx, state, args| {
                     *state = ctx.eval_context.cleared_state();
-                    state.wasm_mode = true;
+                    let pkg_dir = std::env::current_dir()?.join("evxcr_pkg");
+                    if let Some(name) = args {
+                        state.config.wasm_mode = Some(pkg_dir.join(name));
+                    } else {
+                        state.config.wasm_mode = Some(pkg_dir.join(Alphanumeric.sample_string(&mut rand::thread_rng(), 5)));
+                    }
                     state.config.target = "wasm-unknown-unknown".to_owned();
                     Ok(EvalOutputs::new())
                 }
