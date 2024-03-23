@@ -669,13 +669,16 @@ Panic detected. Here's some useful information if you're filing a bug report.
                 "compile this cell to wasm at ./evcxr_pkg/{arg}",
                 |ctx, state, args| {
                     *state = ctx.eval_context.cleared_state();
-                    let pkg_dir = std::env::current_dir()?.join("evxcr_pkg");
+                    let mut pkg_dir = std::env::current_dir()?.join("evcxr_pkg");
                     if let Some(name) = args {
-                        state.config.wasm_mode = Some(pkg_dir.join(name));
+                        pkg_dir = pkg_dir.join(name);
                     } else {
-                        state.config.wasm_mode = Some(pkg_dir.join(Alphanumeric.sample_string(&mut rand::thread_rng(), 5)));
+                        pkg_dir = pkg_dir.join(Alphanumeric.sample_string(&mut rand::thread_rng(), 5));
                     }
                     state.config.target = "wasm-unknown-unknown".to_owned();
+                    state.config.wasm_mode = Some(pkg_dir.clone());
+                    state.config.tmpdir = pkg_dir.clone();
+                    std::fs::create_dir_all(pkg_dir)?;
                     Ok(EvalOutputs::new())
                 }
             )
