@@ -1,0 +1,17 @@
+[package]
+name = "evcxr_ssg"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+anyhow = "1.0.81"
+postcard = { version = "1.0.8", features = ["use-std"] }
+proc-macro2 = "1.0.79"
+quote = "1.0.35"
+rand = "0.8.5"
+serde = "1.0.197"
+sha2 = "0.10.8"
+syn = { version = "2.0.55", features = ["full"] }
