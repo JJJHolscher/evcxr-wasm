@@ -37,16 +37,16 @@ pub fn call_wasm(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 evcxr_ssg::postcard::to_stdvec(#elems).map_err(|_| "postcard could not serialize".to_owned()).unwrap()
             ),*];
 
-            let add_args = all_bytes
+            let add_args: Vec<String> = all_bytes
                 .into_iter()
                 .map(|b| evcxr_ssg::glue_bytes_to_js(b).unwrap())
-                .collect()
-                .join("\n");
+                .collect();
+            let add_args = add_args.join("\n");
 
             let id = format!(
                 "{}_{}",
                 #fn_name,
-                evcxr_ssg::rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 8)
+                evcxr_ssg::rand::distributions::Alphanumeric.sample_string(&mut evcxr_ssg::rand::thread_rng(), 8)
             );
 
             println!(

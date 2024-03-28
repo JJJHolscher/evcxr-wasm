@@ -285,6 +285,7 @@ if (typeof window.evcxr === 'undefined') {{
     // here we find the path of the notebook in the active Jupyter Lab tab.
     console.log('your first time calling the wasm command from evcxr, requires you to stay on the same jupyter lab tab during compilation, if you are using jupyter lab. sorry');
     active_tab = document.querySelector('[class~=jp-mod-current]');
+    console.log(active_tab);
     if (active_tab !== null) {{
         nb_dir = './' + active_tab.title.split('\n')[1].substr(6);
         nb_dir = nb_dir.substr(0, nb_dir.lastIndexOf('/'));
@@ -309,7 +310,6 @@ window.__evcxr_load = function(init, wasm_bindgen) {{
 
 if (window.evcxr_cwd) {{
     import(window.evcxr_cwd + '/{pkg_dir}/ctx.js').then((module) => {{
-        console.log(module);
         window.__evcxr_load(module.default, module);
     }});
 }}

@@ -1,10 +1,11 @@
 [package]
 name = "evcxr_ssg_macro"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license-file = "LICENSE"
 repository = "https://github.com/JJJHolscher/evcxr-wasm"
 readme = "readme.md"
+description = "A macro for calling a function in wasm and passing serializable rust values to it"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
