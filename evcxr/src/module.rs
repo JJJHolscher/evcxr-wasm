@@ -285,14 +285,10 @@ if (typeof window.evcxr === 'undefined') {{
     // here we find the path of the notebook in the active Jupyter Lab tab.
     console.log('your first time calling the wasm command from evcxr, requires you to stay on the same jupyter lab tab during compilation, if you are using jupyter lab. sorry');
     active_tab = document.querySelector('[class~=jp-mod-current]');
-    console.log(active_tab);
     if (active_tab !== null) {{
         nb_dir = './' + active_tab.title.split('\n')[1].substr(6);
-        console.log(nb_dir);
-        nb_dir = nb_dir.substr(0, nb_dir.lastIndexOf('/')) + '/';
-        console.log(nb_dir);
+        nb_dir = nb_dir.substr(0, nb_dir.lastIndexOf('/'));
         window.evcxr_cwd = '/files/' + nb_dir;
-        console.log(window.evcxr_cwd);
     }}
 }}
 
@@ -312,7 +308,7 @@ window.__evcxr_load = function(init, wasm_bindgen) {{
 }}
 
 if (window.evcxr_cwd) {{
-    import(window.evcxr_cwd + '{pkg_dir}/ctx.js').then((module) => {{
+    import(window.evcxr_cwd + '/{pkg_dir}/ctx.js').then((module) => {{
         console.log(module);
         window.__evcxr_load(module.default, module);
     }});
@@ -322,7 +318,7 @@ if (window.evcxr_cwd) {{
 // this errors inside jupyter lab or jupyter notebook
 import init, * as wasm_bindgen from './{pkg_dir}/ctx.js'
 window.__evcxr_load(init, wasm_bindgen);
-window.evcxr_cwd = './'
+window.evcxr_cwd = '.'
 </script>
 "#);
         let mut out = EvalOutputs::new();

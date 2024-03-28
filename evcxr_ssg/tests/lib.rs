@@ -2,8 +2,8 @@ use evcxr_ssg::wasm_call_test;
 
 #[test]
 fn cwd() {
-    let out = wasm_call_test!("$cwd");
-    assert_eq!(out.unwrap(), "args.push(evcxr_cwd);".to_owned())
+    let out = wasm_call_test!("cwd", "hi").unwrap();
+    assert_eq!(out, "args.push(evcxr_cwd);".to_owned())
 }
 
 #[test]
