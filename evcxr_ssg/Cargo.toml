@@ -13,4 +13,4 @@ postcard = { version = "1.0.8", features = ["use-std"] }
 rand = "0.8.5"
 serde = "1.0.197"
 sha2 = "0.10.8"
-evcxr_ssg_macro = "*"
+evcxr_ssg_macro = "0.1.1"
