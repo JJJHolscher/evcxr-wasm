@@ -238,7 +238,7 @@ impl Module {
                 "web",
                 "-d",
                 abs_pkg_dir.to_str().unwrap(),
-                "--dev"
+                "--dev",
             ])
             .current_dir(config.crate_dir())
             .env("CARGO_TARGET_DIR", "target")
@@ -275,22 +275,25 @@ impl Module {
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
             .as_millis();
-        let js: String = format!(r#"
+
+        let jnb_dir = (|| -> anyhow::Result<String> {
+            match std::path::PathBuf::from(std::env::var("JPY_SESSION_NAME")?)
+                .strip_prefix(std::fs::read_link(&format!(
+                    "/proc/{}/cwd",
+                    std::env::var("JPY_PARENT_PID")?
+                ))?)?
+                .parent()
+            {
+                Some(path) => Ok(path.as_os_str().to_str().unwrap().to_owned()),
+                None => Ok(".".to_owned()),
+            }
+        })()
+        .unwrap();
+        let js: String = format!(
+            r#"
 <script>
 if (typeof window.evcxr === 'undefined') {{
     window.evcxr = {{}};
-
-    // jupyter lab hides files behind the '/files/' prefix.
-    // which is annoying. We have to have to mind that while loading.
-    // here we find the path of the notebook in the active Jupyter Lab tab.
-    console.log('your first time calling the wasm command from evcxr, requires you to stay on the same jupyter lab tab during compilation, if you are using jupyter lab. sorry');
-    active_tab = document.querySelector('[class~=jp-mod-current]');
-    console.log(active_tab);
-    if (active_tab !== null) {{
-        nb_dir = './' + active_tab.title.split('\n')[1].substr(6);
-        nb_dir = nb_dir.substr(0, nb_dir.lastIndexOf('/'));
-        window.evcxr_cwd = '/files/' + nb_dir;
-    }}
 }}
 
 window.__evcxr_load = function(init, wasm_bindgen) {{
@@ -304,23 +307,25 @@ window.__evcxr_load = function(init, wasm_bindgen) {{
                 writable: true,
                 value: loader_fn 
             }});
+            window.dispatchEvent(new Event('evcxr_' + fn_name));
         }}
     }}
-}}
-
-if (window.evcxr_cwd) {{
-    import(window.evcxr_cwd + '/{pkg_dir}/ctx.js').then((module) => {{
-        window.__evcxr_load(module.default, module);
-    }});
 }}
 </script>
 <script type='module'>
 // this errors inside jupyter lab or jupyter notebook
-import init, * as wasm_bindgen from './{pkg_dir}/ctx.js'
+import init, * as wasm_bindgen from '/files/{jnb_dir}/{pkg_dir}/ctx.js'
+window.evcxr_cwd = '/files/{jnb_dir}';
 window.__evcxr_load(init, wasm_bindgen);
-window.evcxr_cwd = '.'
 </script>
-"#);
+<script type='module'>
+// this errors inside jupyter lab or jupyter notebook
+import init, * as wasm_bindgen from './{pkg_dir}/ctx.js'
+window.evcxr_cwd = '.';
+window.__evcxr_load(init, wasm_bindgen);
+</script>
+"#
+        );
         let mut out = EvalOutputs::new();
         out.content_by_mime_type.insert("text/html".to_owned(), js);
         Ok(out)

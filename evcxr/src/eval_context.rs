@@ -244,7 +244,7 @@ impl Config {
             subprocess_path,
             codegen_backend: None,
             build_envs: Default::default(),
-            wasm_mode: None
+            wasm_mode: None,
         })
     }
 

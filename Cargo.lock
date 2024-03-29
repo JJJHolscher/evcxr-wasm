@@ -738,7 +738,7 @@ name = "evcxr_ssg"
 version = "0.1.1"
 dependencies = [
  "anyhow",
- "evcxr_ssg_macro 0.1.1",
+ "evcxr_ssg_macro 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "postcard",
  "rand",
  "serde",
@@ -747,9 +747,7 @@ dependencies = [
 
 [[package]]
 name = "evcxr_ssg_macro"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "434fc211f24c6a31b86c252296e044e5128c5f424d3fba5844327c35cf7f9eee"
+version = "0.1.2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -759,6 +757,8 @@ dependencies = [
 [[package]]
 name = "evcxr_ssg_macro"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79639db2e1dda491aa4da9bd0d652cbd077df1c24012e30b838cb1f5ec7530b9"
 dependencies = [
  "proc-macro2",
  "quote",

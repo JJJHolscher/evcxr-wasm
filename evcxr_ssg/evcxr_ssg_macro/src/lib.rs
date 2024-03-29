@@ -4,7 +4,6 @@ use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::{parse_macro_input, Expr};
 
-
 struct Args {
     fn_name: Expr,
     elems: Vec<Expr>,
@@ -15,12 +14,13 @@ impl Parse for Args {
         let punctuated: Punctuated<Expr, Comma> = Punctuated::parse_terminated(input)?;
         let mut punctuated = punctuated.into_iter();
         Ok(Self {
-            fn_name: punctuated.next().ok_or(syn::Error::new(input.span(), "no arguments"))?,
+            fn_name: punctuated
+                .next()
+                .ok_or(syn::Error::new(input.span(), "no arguments"))?,
             elems: punctuated.collect(),
         })
     }
 }
-
 
 #[proc_macro]
 pub fn call_wasm(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -43,9 +43,9 @@ pub fn call_wasm(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 .collect();
             let add_args = add_args.join("\n");
 
+            let fn_name = #fn_name;
             let id = format!(
-                "{}_{}",
-                #fn_name,
+                "{fn_name}_{}",
                 evcxr_ssg::rand::distributions::Alphanumeric.sample_string(&mut evcxr_ssg::rand::thread_rng(), 8)
             );
 
@@ -53,35 +53,34 @@ pub fn call_wasm(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 "EVCXR_BEGIN_CONTENT text/html\n
 <div id='{id}'></div>
 <script>
-    async function __evcxr_display_{id}() {{
-        root = document.getElementById('{id}');
-        args = [];
-        {add_args}
-        window.evcxr.{}(...args);
-    }};
-    if (Object.keys(window.evcxr) == true) {{
-        __evcxr_display_{id}();
-    }} else {{
-        window.addEventListener('load', __evcxr_display_{id});
-    }}
+async function __evcxr_display_{id}() {{
+    root = document.getElementById('{id}');
+    args = [];
+    {add_args}
+    window.evcxr.{fn_name}(...args);
+}}
+if (window.evcxr.{fn_name}) {{
+    __evcxr_display_{id}();
+}} else {{
+    window.addEventListener('evcxr_{fn_name}', __evcxr_display_{id});
+}}
 </script>
-\nEVCXR_END_CONTENT",
-                        #fn_name
+\nEVCXR_END_CONTENT"
             );
         })()}
     } else {
         quote! { (|| {
+            let fn_name = #fn_name;
             println!(
                 "EVCXR_BEGIN_CONTENT text/html\n
 <script>
-if (Object.keys(window.evcxr) == true) {{
-    window.evcxr.{}();
+if (window.evcxr.{fn_name}) {{
+    window.evcxr.{fn_name}();
 }} else {{
-    window.addEventListener('load', window.evcxr.{});
+    window.addEventListener('evcxr_{fn_name}', window.evcxr.{fn_name});
 }}
 </script>
-\nEVCXR_END_CONTENT",
-                        #fn_name, #fn_name
+\nEVCXR_END_CONTENT"
             );
         })()}
     };
