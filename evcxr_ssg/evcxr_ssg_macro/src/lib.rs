@@ -59,7 +59,7 @@ pub fn call_wasm(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         {add_args}
         window.evcxr.{}(...args);
     }};
-    if (Object.keys(window.evcxr)) {{
+    if (Object.keys(window.evcxr) == true) {{
         __evcxr_display_{id}();
     }} else {{
         window.addEventListener('load', __evcxr_display_{id});
@@ -74,10 +74,10 @@ pub fn call_wasm(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             println!(
                 "EVCXR_BEGIN_CONTENT text/html\n
 <script>
-if (Object.keys(window.evcxr)) {{
-window.evcxr.{}();
+if (Object.keys(window.evcxr) == true) {{
+    window.evcxr.{}();
 }} else {{
-window.addEventListener('load', window.evcxr.{});
+    window.addEventListener('load', window.evcxr.{});
 }}
 </script>
 \nEVCXR_END_CONTENT",

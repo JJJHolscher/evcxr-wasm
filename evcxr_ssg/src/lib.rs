@@ -33,7 +33,7 @@ pub fn glue_bytes_to_js(bytes: Vec<u8>) -> Result<String, String> {
             chars.next();
             return Ok(format!("args.push(root.{});", chars.as_str()))
         } else if arg.starts_with("./") | arg.starts_with("../") {
-            return Ok(format!("args.push(evcxr_cwd + '/{}');", arg))
+            return Ok(format!("args.push(window.evcxr_cwd + '/{}');", arg))
         }
 
         return Ok(format!("args.push('{}')", arg));
