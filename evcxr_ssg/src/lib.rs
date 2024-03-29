@@ -44,9 +44,29 @@ pub fn glue_bytes_to_js(bytes: Vec<u8>) -> Result<String, String> {
 }
 
 pub fn stylesheet(href: &str) {
-    println!("
-        EVCXR_BEGIN_CONTENT text/html\n
-        <link id='evcxr_stylesheet' rel='stylesheet' href='{href}'>
-        \nEVCXR_END_CONTENT
-    ");
+    println!("EVCXR_BEGIN_CONTENT text/html\n
+<script>
+function __evcxr_stylesheet() {{
+    const link = document.getElementById('evcxr_stylesheet');
+    if (link) {{
+        link.href = window.evcxr_cwd + '/{href}';
+    }} else {{
+        const link = document.createElement('link');
+        link.id = 'evcxr_stylesheet';
+        link.href = window.evcxr_cwd + '/{href}';
+        link.rel = 'stylesheet';
+        document.getElementsByTagName('head')[0].appendChild(link);
+    }}
+}}
+if (typeof window.evcxr_cwd === 'undefined') {{
+    window.addEventListener(
+        '__evcxr_cwd',
+        __evcxr_stylesheet,
+        {{ once: true }}
+    );
+}} else {{
+    __evcxr_stylesheet();
+}}
+</script>
+\nEVCXR_END_CONTENT");
 }

@@ -62,7 +62,11 @@ async function __evcxr_display_{id}() {{
 if (window.evcxr.{fn_name}) {{
     __evcxr_display_{id}();
 }} else {{
-    window.addEventListener('evcxr_{fn_name}', __evcxr_display_{id});
+    window.addEventListener(
+        'evcxr_{fn_name}',
+        __evcxr_display_{id},
+        {{ once: true }}
+    );
 }}
 </script>
 \nEVCXR_END_CONTENT"
@@ -77,7 +81,11 @@ if (window.evcxr.{fn_name}) {{
 if (window.evcxr.{fn_name}) {{
     window.evcxr.{fn_name}();
 }} else {{
-    window.addEventListener('evcxr_{fn_name}', window.evcxr.{fn_name});
+    window.addEventListener(
+        'evcxr_{fn_name}',
+        window.evcxr.{fn_name},
+        {{ once: true }}
+    );
 }}
 </script>
 \nEVCXR_END_CONTENT"

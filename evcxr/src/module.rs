@@ -311,18 +311,21 @@ window.__evcxr_load = function(init, wasm_bindgen) {{
         }}
     }}
 }}
-</script>
-<script type='module'>
-// this errors inside jupyter lab or jupyter notebook
-import init, * as wasm_bindgen from '/files/{jnb_dir}/{pkg_dir}/ctx.js'
-window.evcxr_cwd = '/files/{jnb_dir}';
-window.__evcxr_load(init, wasm_bindgen);
-</script>
-<script type='module'>
-// this errors inside jupyter lab or jupyter notebook
-import init, * as wasm_bindgen from './{pkg_dir}/ctx.js'
-window.evcxr_cwd = '.';
-window.__evcxr_load(init, wasm_bindgen);
+import('/files/{jnb_dir}/{pkg_dir}/ctx.js').then((module) => {{
+    if (typeof window.evcxr_cwd === 'undefined') {{
+        window.evcxr_cwd = '/files/{jnb_dir}';
+        window.dispatchEvent(new Event('__evcxr_cwd'));
+    }}
+    window.__evcxr_load(module.default, module);
+}}).catch((e) => {{
+    import('{pkg_dir}/ctx.js').then((module) => {{
+        if (typeof window.evcxr_cwd === 'undefined') {{
+            window.evcxr_cwd = '.';
+            window.dispatchEvent(new Event('__evcxr_cwd'));
+        }}
+        window.__evcxr_load(module.default, module);
+    }});
+}});
 </script>
 "#
         );
