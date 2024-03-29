@@ -296,36 +296,35 @@ if (typeof window.evcxr === 'undefined') {{
     window.evcxr = {{}};
 }}
 
-window.__evcxr_load = function(init, wasm_bindgen) {{
+window.__evcxr_load = function(wasm_bindgen) {{
     for (const [fn_name, fn] of Object.entries(wasm_bindgen)) {{
         if (typeof fn === 'function') {{
-            async function loader_fn(...args) {{
-                await init();
-                return fn(...args);
-            }};
             Object.defineProperty(window.evcxr, fn_name, {{ 
                 writable: true,
-                value: loader_fn 
+                value: fn 
             }});
             window.dispatchEvent(new Event('evcxr_' + fn_name));
         }}
     }}
 }}
-import('/files/{jnb_dir}/{pkg_dir}/ctx.js').then((module) => {{
-    if (typeof window.evcxr_cwd === 'undefined') {{
-        window.evcxr_cwd = '/files/{jnb_dir}';
-        window.dispatchEvent(new Event('__evcxr_cwd'));
-    }}
-    window.__evcxr_load(module.default, module);
-}}).catch((e) => {{
-    import('{pkg_dir}/ctx.js').then((module) => {{
-        if (typeof window.evcxr_cwd === 'undefined') {{
-            window.evcxr_cwd = '.';
-            window.dispatchEvent(new Event('__evcxr_cwd'));
-        }}
-        window.__evcxr_load(module.default, module);
-    }});
-}});
+</script>
+<script type='module'>
+import init, * as wasm_bindgen from './{pkg_dir}/ctx.js';
+await init();
+if (typeof window.evcxr_cwd === 'undefined') {{
+    window.evcxr_cwd = '.';
+    window.dispatchEvent(new Event('__evcxr_cwd'));
+}}
+window.__evcxr_load(wasm_bindgen);
+</script>
+<script type='module'>
+import init, * as wasm_bindgen from '/files/{jnb_dir}/{pkg_dir}/ctx.js';
+await init();
+if (typeof window.evcxr_cwd === 'undefined') {{
+    window.evcxr_cwd = '/files/{jnb_dir}';
+    window.dispatchEvent(new Event('__evcxr_cwd'));
+}}
+window.__evcxr_load(wasm_bindgen);
 </script>
 "#
         );
